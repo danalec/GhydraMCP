@@ -1,20 +1,17 @@
-name: PROBE2 secret-and-contexts
-# Isolate: the secrets.RELEASE_TOKEN reference and the gitea.* contexts.
+name: PROBE4 gitea-contexts
+# Isolate: the gitea.* contexts alone, no secret reference.
 on:
   push:
     branches: [ main ]
 
 jobs:
-  release:
-    name: Publish the release
+  probe:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Create the release
+      - name: contexts
         env:
-          TEA_TOKEN: ${{ secrets.RELEASE_TOKEN }}
           GITEA_SERVER: ${{ gitea.server_url }}
           GITEA_REPOSITORY: ${{ gitea.repository }}
         run: |
           echo "server=$GITEA_SERVER repo=$GITEA_REPOSITORY"
-          echo "token_length=${#TEA_TOKEN}"

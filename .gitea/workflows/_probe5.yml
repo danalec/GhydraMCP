@@ -1,0 +1,15 @@
+name: PROBE5 secret-only
+# Isolate: the secrets.RELEASE_TOKEN reference alone, no gitea.* contexts.
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: secret
+        env:
+          TEA_TOKEN: ${{ secrets.RELEASE_TOKEN }}
+        run: echo "token_length=${#TEA_TOKEN}"
