@@ -1,0 +1,12 @@
+name: PROBE3 control
+# Control: the smallest possible workflow, same shape as build.yml.
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: echo "probe3 ok"
