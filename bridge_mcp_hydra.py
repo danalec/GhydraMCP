@@ -3,6 +3,12 @@
 # dependencies = [
 #     "mcp==1.6.0",
 #     "requests==2.32.3",
+#     # Same ceiling as pyproject.toml: mcp 1.6.0 imports
+#     # pydantic._internal._typing_extra.eval_type_backport, which pydantic
+#     # 2.14 removed. Without it a fresh resolve picks pydantic >= 2.14 and
+#     # `import mcp.server.fastmcp` dies with an ImportError - measured with
+#     # uv 0.10.10, which resolved 2.14.1 and failed to import.
+#     "pydantic<2.14",
 # ]
 # ///
 # GhydraMCP Bridge for Ghidra HATEOAS API - Optimized for MCP integration
@@ -162,7 +168,12 @@ def _kuna_enabled() -> bool:
 
 
 def _kuna_candidates() -> List[str]:
-    """Where the kuna binary may live, most specific first."""
+    """Where the kuna binary may live, most specific first.
+
+    A configured path wins, then whatever is on PATH, and finally the
+    Scoop install locations - those only exist on Windows, so they are
+    skipped elsewhere.
+    """
     candidates: List[str] = []
     configured = _kuna_config().get("path") or os.environ.get(KUNA_ENV_PATH)
     if configured:
@@ -170,9 +181,10 @@ def _kuna_candidates() -> List[str]:
     found = shutil.which("kuna")
     if found:
         candidates.append(found)
-    home = os.path.expanduser("~")
-    candidates.append(os.path.join(home, "scoop", "shims", "kuna.exe"))
-    candidates.append(os.path.join(home, "scoop", "apps", "kuna", "current", "kuna.exe"))
+    if os.name == "nt":
+        home = os.path.expanduser("~")
+        candidates.append(os.path.join(home, "scoop", "shims", "kuna.exe"))
+        candidates.append(os.path.join(home, "scoop", "apps", "kuna", "current", "kuna.exe"))
     return candidates
 
 
@@ -230,6 +242,10 @@ def _kuna_run(args: List[str], timeout: Optional[int] = None) -> dict:
             [executable, *args],
             capture_output=True,
             text=True,
+            # Kuna writes UTF-8. Decoding with the locale instead would mangle
+            # the output on a system with no UTF-8 locale set (LANG=C, and a
+            # NixOS box with the locale left unset).
+            encoding="utf-8",
             errors="replace",
             timeout=limit,
         )
